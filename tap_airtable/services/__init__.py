@@ -111,6 +111,7 @@ class Airtable(object):
                 # numbers are not allowed at the start of column name in big query
                 # check if the name starts with digit, keep the same naming but add a character before
                 field_name = field["name"]
+
                 if field["name"][0].isdigit():
                     field_name = "c_" + field_name
 
@@ -263,6 +264,14 @@ class Airtable(object):
                     col_schema = deepcopy(col_defs)
                     col_schema["_airtable_record_id"] = schema["_airtable_record_id"]
 
+                    # replace % and # to avoid duplicated columns
+                    col_schema = {
+                        k.replace("%", "percent")
+                        .replace("#", "number")
+                        .replace("AY", "test"): v
+                        for k, v in col_schema.items()
+                    }
+
                     singer.write_schema(
                         table_slug, {"properties": col_schema}, stream["key_properties"]
                     )
@@ -300,6 +309,14 @@ class Airtable(object):
 
             # rename original columnd ID to avoid duplicate conflicts with user created columns with the same name
             row["_airtable_record_id"] = r["id"]
+
+            # replace % and # to avoid duplicated columns
+            row = {
+                k.replace("%", "percent")
+                .replace("#", "number")
+                .replace("AY", "test"): v
+                for k, v in row.items()
+            }
 
             # TODO: cast to string/numbers?
             mapped.append(row)
