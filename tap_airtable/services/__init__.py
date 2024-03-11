@@ -267,8 +267,7 @@ class Airtable(object):
                     # replace % and # to avoid duplicated columns
                     col_schema = {
                         k.replace("%", "percent")
-                        .replace("#", "number")
-                        .replace("AY", "test"): v
+                        .replace("#", "number"): v
                         for k, v in col_schema.items()
                     }
 
@@ -313,8 +312,7 @@ class Airtable(object):
             # replace % and # to avoid duplicated columns
             row = {
                 k.replace("%", "percent")
-                .replace("#", "number")
-                .replace("AY", "test"): v
+                .replace("#", "number"): v
                 for k, v in row.items()
             }
 
