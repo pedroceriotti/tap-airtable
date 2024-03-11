@@ -261,10 +261,7 @@ class Airtable(object):
 
                 if records:
                     col_schema = deepcopy(col_defs)
-
-                    # rename original columnd ID to avoid duplicate conflicts with user created columns with the same name
-                    col_schema["_airtable_record_id"] = schema["id"]
-                    col_schema.pop("id")
+                    col_schema["_airtable_record_id"] = schema["_airtable_record_id"]
 
                     singer.write_schema(
                         table_slug, {"properties": col_schema}, stream["key_properties"]
@@ -303,7 +300,6 @@ class Airtable(object):
 
             # rename original columnd ID to avoid duplicate conflicts with user created columns with the same name
             row["_airtable_record_id"] = r["id"]
-            row.pop("id")
 
             # TODO: cast to string/numbers?
             mapped.append(row)
