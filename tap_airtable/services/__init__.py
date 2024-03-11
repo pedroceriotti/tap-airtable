@@ -94,7 +94,11 @@ class Airtable(object):
         entries = []
 
         for table in response.json()["tables"]:
-            schema_cols = {"id": Schema(inclusion="automatic", type=["null", "string"])}
+            schema_cols = {
+                "_airtable_record_id": Schema(
+                    inclusion="automatic", type=["null", "string"]
+                )
+            }
 
             meta = {}
 
@@ -243,7 +247,6 @@ class Airtable(object):
             schema = stream["schema"]["properties"]
             base_id = cls._find_base_id(stream)
             table = stream["table_name"]
-
             table_slug = slugify(table, separator="_")
             col_defs, field_ids = cls._find_selected_columns(stream)
 
@@ -258,7 +261,11 @@ class Airtable(object):
 
                 if records:
                     col_schema = deepcopy(col_defs)
-                    col_schema["id"] = schema["id"]
+
+                    # rename original columnd ID to avoid duplicate conflicts with user created columns with the same name
+                    col_schema["_airtable_record_id"] = schema["id"]
+                    col_schema.pop("id")
+
                     singer.write_schema(
                         table_slug, {"properties": col_schema}, stream["key_properties"]
                     )
@@ -294,7 +301,10 @@ class Airtable(object):
                     val = cls.cast_type(val, requested_type)
                 row[col] = val
 
-            row["id"] = r["id"]
+            # rename original columnd ID to avoid duplicate conflicts with user created columns with the same name
+            row["_airtable_record_id"] = r["id"]
+            row.pop("id")
+
             # TODO: cast to string/numbers?
             mapped.append(row)
         return mapped
