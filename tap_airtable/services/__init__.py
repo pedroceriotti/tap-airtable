@@ -7,7 +7,6 @@ from requests import Session
 from requests.adapters import HTTPAdapter, Retry
 from singer import metadata
 from singer.catalog import Catalog, CatalogEntry, Schema
-from slugify import slugify
 
 
 def init_session() -> Session:
@@ -227,7 +226,6 @@ class Airtable(object):
             schema = stream["schema"]["properties"]
             base_id = cls._find_base_id(stream)
             table = stream["table_name"]
-            table_slug = slugify(stream["tap_stream_id"], separator="_")
             col_defs, field_ids = cls._find_selected_columns(stream)
 
             counter = 0
@@ -244,8 +242,8 @@ class Airtable(object):
                     # replace % and # to avoid duplicated columns
                     col_schema = {k.replace("%", "percent").replace("#", "number"): v for k, v in col_schema.items()}
 
-                    singer.write_schema(table_slug, {"properties": col_schema}, stream["key_properties"])
-                    singer.write_records(table_slug, cls._map_records(stream, records))
+                    singer.write_schema(stream["tap_stream_id"], {"properties": col_schema}, stream["key_properties"])
+                    singer.write_records(stream["tap_stream_id"], cls._map_records(stream, records))
                     offset = response.json().get("offset")
 
                     while offset:
@@ -253,7 +251,7 @@ class Airtable(object):
                         response = Airtable.get_response(base_id, table, field_ids, offset, counter=counter)
                         records = response.json().get("records")
                         if records:
-                            singer.write_records(table_slug, cls._map_records(stream, records))
+                            singer.write_records(stream["tap_stream_id"], cls._map_records(stream, records))
                             offset = response.json().get("offset")
 
     @classmethod
