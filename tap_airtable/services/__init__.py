@@ -227,7 +227,7 @@ class Airtable(object):
             schema = stream["schema"]["properties"]
             base_id = cls._find_base_id(stream)
             table = stream["table_name"]
-            table_slug = slugify(table, separator="_")
+            table_slug = slugify(stream["tap_stream_id"], separator="_")
             col_defs, field_ids = cls._find_selected_columns(stream)
 
             counter = 0
