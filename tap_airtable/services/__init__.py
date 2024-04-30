@@ -13,9 +13,7 @@ from slugify import slugify
 def init_session() -> Session:
     session = Session()
 
-    retries = Retry(
-        total=10, backoff_factor=2, status_forcelist=[500, 502, 503, 504, 429]
-    )
+    retries = Retry(total=10, backoff_factor=2, status_forcelist=[500, 502, 503, 504, 429])
     session.mount("https://", HTTPAdapter(max_retries=retries))
     session.mount("http://", HTTPAdapter(max_retries=retries))
 
@@ -87,18 +85,12 @@ class Airtable(object):
     def discover_base(cls, base_id, base_name=None):
         cls.logger.info("discover base " + base_id)
         headers = cls.__get_auth_header()
-        response = cls.session.get(
-            url=cls.metadata_url + base_id + "/tables", headers=headers
-        )
+        response = cls.session.get(url=cls.metadata_url + base_id + "/tables", headers=headers)
         response.raise_for_status()
         entries = []
 
         for table in response.json()["tables"]:
-            schema_cols = {
-                "_airtable_record_id": Schema(
-                    inclusion="automatic", type=["null", "string"]
-                )
-            }
+            schema_cols = {"_airtable_record_id": Schema(inclusion="automatic", type=["null", "string"])}
 
             meta = {}
 
@@ -120,12 +112,7 @@ class Airtable(object):
                     keys.append(field_name)
 
                 if field_name in schema_cols:
-                    field_ids = (
-                        metadata.get(
-                            meta, ("properties", field_name), "airtable_field_ids"
-                        )
-                        or []
-                    )
+                    field_ids = metadata.get(meta, ("properties", field_name), "airtable_field_ids") or []
                     field_ids.append(field["id"])
 
                     meta = metadata.write(
@@ -138,12 +125,8 @@ class Airtable(object):
 
                 schema_cols[field_name] = col_schema
 
-                meta = metadata.write(
-                    meta, ("properties", field_name), "inclusion", "available"
-                )
-                meta = metadata.write(
-                    meta, ("properties", field_name), "real_name", field["name"]
-                )
+                meta = metadata.write(meta, ("properties", field_name), "inclusion", "available")
+                meta = metadata.write(meta, ("properties", field_name), "real_name", field["name"])
                 meta = metadata.write(
                     meta,
                     ("properties", field_name),
@@ -162,7 +145,7 @@ class Airtable(object):
                 tap_stream_id=table["id"],
                 database=base_name or base_id,
                 table=table_name,
-                stream=table_name,
+                stream=table["id"],
                 metadata=metadata.to_list(meta),
                 key_properties=keys,
                 schema=schema,
@@ -230,11 +213,7 @@ class Airtable(object):
     @classmethod
     def _find_column(cls, col, meta_data):
         for m in meta_data:
-            if (
-                "breadcrumb" in m
-                and "properties" in m["breadcrumb"]
-                and m["breadcrumb"][1] == col
-            ):
+            if "breadcrumb" in m and "properties" in m["breadcrumb"] and m["breadcrumb"][1] == col:
                 if m["metadata"].get("real_name"):
                     return m["metadata"]["real_name"]
 
@@ -255,9 +234,7 @@ class Airtable(object):
             if len(col_defs) > 0:
                 cls.logger.info("will import " + table)
 
-                response = Airtable.get_response(
-                    base_id, table, field_ids, counter=counter
-                )
+                response = Airtable.get_response(base_id, table, field_ids, counter=counter)
                 records = response.json().get("records")
 
                 if records:
@@ -265,28 +242,18 @@ class Airtable(object):
                     col_schema["_airtable_record_id"] = schema["_airtable_record_id"]
 
                     # replace % and # to avoid duplicated columns
-                    col_schema = {
-                        k.replace("%", "percent")
-                        .replace("#", "number"): v
-                        for k, v in col_schema.items()
-                    }
+                    col_schema = {k.replace("%", "percent").replace("#", "number"): v for k, v in col_schema.items()}
 
-                    singer.write_schema(
-                        table_slug, {"properties": col_schema}, stream["key_properties"]
-                    )
+                    singer.write_schema(table_slug, {"properties": col_schema}, stream["key_properties"])
                     singer.write_records(table_slug, cls._map_records(stream, records))
                     offset = response.json().get("offset")
 
                     while offset:
                         counter += 1
-                        response = Airtable.get_response(
-                            base_id, table, field_ids, offset, counter=counter
-                        )
+                        response = Airtable.get_response(base_id, table, field_ids, offset, counter=counter)
                         records = response.json().get("records")
                         if records:
-                            singer.write_records(
-                                table_slug, cls._map_records(stream, records)
-                            )
+                            singer.write_records(table_slug, cls._map_records(stream, records))
                             offset = response.json().get("offset")
 
     @classmethod
@@ -310,11 +277,7 @@ class Airtable(object):
             row["_airtable_record_id"] = r["id"]
 
             # replace % and # to avoid duplicated columns
-            row = {
-                k.replace("%", "percent")
-                .replace("#", "number"): v
-                for k, v in row.items()
-            }
+            row = {k.replace("%", "percent").replace("#", "number"): v for k, v in row.items()}
 
             # TODO: cast to string/numbers?
             mapped.append(row)
